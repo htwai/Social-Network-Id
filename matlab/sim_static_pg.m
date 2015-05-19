@@ -23,7 +23,7 @@ N_s = N_s_choice(nnn); % there are $N_s$ stubborn agents, which are probes that 
 
 p = 0.008; % the connectivity between the normal agents
 
-d_s = 5; % constant degree
+d_s = 7; % constant degree
 
 total_exp = 500; % no of experiments we are running, i.e., the constant K in the paper
 
