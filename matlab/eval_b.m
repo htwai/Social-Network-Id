@@ -2,7 +2,7 @@
 % i.e., Theorem 1 in the journal
 % Written on 05.18.2015
 
-d = 5; % the constatnt degree
+d = 7; % the constatnt degree
 p = 0.008; % the probability
 
 % these are some constants as defined in the theorem...

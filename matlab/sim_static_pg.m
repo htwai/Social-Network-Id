@@ -11,17 +11,17 @@ clc; clear all; close all;
 % Instead of using CVX for part 2, here we used a custom made Proximal, 
 % Projected Gradient method for the task.
 
-N_s_choice = 140 : 5 : 300;
+N_s_choice = 100 : 5 : 300;
 no_mc = 1e2;
 
 for nnn = 1 : length(N_s_choice)
 %%%%%% System Parameters %%%%%%%%%%%%%%%%%%
-N = 1000; % there are N agents (non-stubborn)
+N = 500; % there are N agents (non-stubborn)
 N_s = N_s_choice(nnn); % there are $N_s$ stubborn agents, which are probes that we can exploit
           % for simplicity, we assume that these stubborn agents form a
           % co-clique on their own.
 
-p = 0.008; % the connectivity between the normal agents
+p = 0.01; % the connectivity between the normal agents
 
 d_s = 7; % constant degree
 
@@ -81,7 +81,7 @@ B_normalize = diag(1 ./ max(1e-10,(1 - diag(D_true)))) * B_true;
 YZ = op_exp_result(N_s+1:end,:)*((op_exp_result(1:N_s,:)*op_exp_result(1:N_s,:)')^-1*op_exp_result(1:N_s,:))';
 
 %%%%%%%%%%%%%%%%% We use a projected gradient here... %%%%%%%%
-lambda = 20000; % the penalty parameter 
+lambda = 1000000; % the penalty parameter 
 D_i = zeros(N); B_i = zeros(N,N_s); % initialization with zero matrices
 obj = norm( B_i - (eye(N)-D_i)*YZ, 'fro'); % initial objective
 alpha = 0.1; % use a constant step size for the inner PG loop
@@ -103,6 +103,10 @@ for subgrad_iter = 1 : 2e2
         tD = D_i - alpha*gD; tD = tD - diag(diag(tD)); 
         % one sided proximal update
         tD = (tD>= (1/lambda)).*(tD - (1/lambda)); D_i = tD;
+        % now project B,D such that the rows sum to one
+        row_sum = B_i*ones(N_s,1) + D_i*ones(N,1);
+        zeta =  (row_sum-1) / (N+N_s);
+        D_i = D_i - repmat(zeta,1,N); B_i = B_i - repmat(zeta,1,N_s);
     end
     % Need to update lambda
     obj_fro = norm( B_i - (eye(N)-D_i)*YZ, 'fro')^2;
