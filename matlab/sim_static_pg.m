@@ -78,18 +78,21 @@ D_normalize = D_normalize - diag(diag(D_normalize));
 B_normalize = diag(1 ./ max(1e-10,(1 - diag(D_true)))) * B_true;
 
 % Compute Y*pinv(Z)
-YZ = op_exp_result(N_s+1:end,:)*((op_exp_result(1:N_s,:)*op_exp_result(1:N_s,:)')^-1*op_exp_result(1:N_s,:))';
+YZ = op_exp_result(N_s+1:end,:)*((op_exp_result(1:N_s,:)*op_exp_result(1:N_s,:)')^-1*op_exp_result(1:N_s,:))'...
+    + 0.1*randn(N,N_s);
 
 %%%%%%%%%%%%%%%%% We use a projected gradient here... %%%%%%%%
-lambda = 1000000; % the penalty parameter 
+lambda = 20000; % the penalty parameter 
 D_i = zeros(N); B_i = zeros(N,N_s); % initialization with zero matrices
 obj = norm( B_i - (eye(N)-D_i)*YZ, 'fro'); % initial objective
 alpha = 0.1; % use a constant step size for the inner PG loop
 
 tic; t_s = toc;
 % we need subgradient update for lambda
-for subgrad_iter = 1 : 2e2
-    for pg_iter = 1 : 1e1
+no_pg = 1e2;
+obj_fro = zeros(no_pg,1); 
+% for subgrad_iter = 1 : 2e2
+    for pg_iter = 1 : no_pg
         % The projected, proximal gradient tries to minimize this:
         % min_{B,D \in C} lambda*||D||_1 + ||B-(I-D)X||_F^2
         D_old = D_i; B_old = B_i;
@@ -107,11 +110,14 @@ for subgrad_iter = 1 : 2e2
         row_sum = B_i*ones(N_s,1) + D_i*ones(N,1);
         zeta =  (row_sum-1) / (N+N_s);
         D_i = D_i - repmat(zeta,1,N); B_i = B_i - repmat(zeta,1,N_s);
+        obj_fro(pg_iter) = norm( B_i - (eye(N)-D_i)*YZ, 'fro')^2;
     end
     % Need to update lambda
-    obj_fro = norm( B_i - (eye(N)-D_i)*YZ, 'fro')^2;
-    lambda = lambda + (1e4)*norm( B_i - (eye(N)-D_i)*YZ, 'fro')^2;
-end
+%     obj_fro = norm( B_i - (eye(N)-D_i)*YZ, 'fro')^2;
+%     lambda = lambda + (1e4)*norm( B_i - (eye(N)-D_i)*YZ, 'fro')^2;
+% end
+plot(obj_fro)
+
 t_f = toc;
 D = D_i; B = B_i;
 
