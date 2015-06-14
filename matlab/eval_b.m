@@ -3,7 +3,7 @@
 % Written on 05.18.2015
 
 d = 5; % the constatnt degree
-p = 8/100; % the probability
+p = 6/60; % the probability
 
 % these are some constants as defined in the theorem...
 delta = 1 - 1 / (d-1);
