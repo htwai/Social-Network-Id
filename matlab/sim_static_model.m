@@ -6,18 +6,19 @@ clc; clear all; close all;
 
 % The simulation consists of two parts --> 1. generate the asymptotic
 % opinion held by diff. users; 2. infer B,D from the asymptotic opinion.
-N_s_choice = 30 : 2 : 36;
-no_mc = 1e0;
+N_s_choice = 20 : 2 : 46;
+no_mc = 1e2;
 
 for nnn = 1 : length(N_s_choice)
 %%%%%% System Parameters %%%%%%%%%%%%%%%%%%
-N = 50; % there are N agents (non-stubborn)
+N = 60; % there are N agents (non-stubborn)
 N_s = N_s_choice(nnn); % there are $N_s$ stubborn agents, which are probes that we can exploit
           % for simplicity, we assume that these stubborn agents form a
           % co-clique on their own.
 
 p = 0.1; % the connectivity between the normal agents
-d_s = 5; % uniform degree for the Stubborn-Non-Stubborn graph
+d_s = 7; % uniform degree for the Stubborn-Non-Stubborn graph
+% p_s = 0.1; % sparsity ER for the Stubborn-Normal graph
 
 total_exp = 100; % no of experiments we are running
 
@@ -37,6 +38,9 @@ G_sn = zeros(N_s,N);
 for nn = 1 : N
     G_sn(randperm(N_s,d_s),nn) = 1;
 end
+
+% gen G_sn by ER
+% G_sn = rand(N_s,N) <= p_s;
 G_com = [zeros(N_s) G_sn; G_sn' G]; % The augmented network with both stubborn and non-stubborn
 
 %%%%%% Part 1 of the simulation %%%%%%%%%%%
@@ -76,7 +80,7 @@ cvx_solver('sedumi')
 cvx_begin
     variable D(N,N) 
     variable B(N,N_s)
-    minimize(  norm(D(:),1) + norm(B(:),1) );
+    minimize(  norm(D(:),1) );
     subject to
         % op_exp_result(N_s+1:end,:) corresponds to the final opinions of
         % Non-stubborn agents, i.e., the matrix $Y$
