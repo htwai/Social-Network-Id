@@ -7,7 +7,7 @@ clc; clear all; close all;
 % The simulation consists of two parts --> 1. generate the asymptotic
 % opinion held by diff. users; 2. infer B,D from the asymptotic opinion.
 N_s_choice = 20 : 2 : 46;
-no_mc = 1e2;
+no_mc = 4;
 
 for nnn = 1 : length(N_s_choice)
 %%%%%% System Parameters %%%%%%%%%%%%%%%%%%
@@ -22,16 +22,12 @@ d_s = 7; % uniform degree for the Stubborn-Non-Stubborn graph
 
 total_exp = 100; % no of experiments we are running
 
-for mc_sim = 1 : no_mc
-    
-fprintf('No of stubborn agents used: %i, MC Sim no: %i \n',N_s,mc_sim);    
+parfor mc_sim = 1 : no_mc
+     
 % Generate the graph between the normal agents --> the network topology
 % that I actually want to guess
 G = rand(N,N) <= p; % correspond to the normal user
 G = triu(G,1); G = G + G'; G = G > 0;
-
-% count the actual number of non-zero entries in G (it's symmetric!)
-fprintf('No. of present links : %i \n',sum(G(:)));
 
 % Generate the topology from stubborn to normal agents 
 G_sn = zeros(N_s,N);
@@ -74,24 +70,26 @@ D_normalize = diag(1 ./ max(1e-10,(1 - diag(D_true)))) * D_true;
 D_normalize = D_normalize - diag(diag(D_normalize));
 B_normalize = diag(1 ./ max(1e-10,(1 - diag(D_true)))) * B_true;
 
-% B = B_normalize;
-cvx_quiet(true)
-cvx_solver('sedumi')
-cvx_begin
-    variable D(N,N) 
-    variable B(N,N_s)
-    minimize(  norm(D(:),1) );
-    subject to
-        % op_exp_result(N_s+1:end,:) corresponds to the final opinions of
-        % Non-stubborn agents, i.e., the matrix $Y$
-        % op_exp_result(1:N_s,:) corresponds to the final/initial opinions
-        % of stubborn agents, i.e., the matrix $Z$
-        op_exp_result(N_s+1:end,:) == D*op_exp_result(N_s+1:end,:) + B*op_exp_result(1:N_s,:);
-        D(:) >= 0; B(:) >= 0;
-        B(BC_mask) == 0;
-        diag(D) == 0;
-        ones(N,1) == [B D]*ones(N+N_s,1);
-cvx_end
+% cvx_quiet(true)
+% cvx_solver('sedumi')
+% cvx_begin
+%     variable D(N,N) 
+%     variable B(N,N_s)
+%     minimize(  norm(D(:),1) );
+%     subject to
+%         % op_exp_result(N_s+1:end,:) corresponds to the final opinions of
+%         % Non-stubborn agents, i.e., the matrix $Y$
+%         % op_exp_result(1:N_s,:) corresponds to the final/initial opinions
+%         % of stubborn agents, i.e., the matrix $Z$
+%         op_exp_result(N_s+1:end,:) == D*op_exp_result(N_s+1:end,:) + B*op_exp_result(1:N_s,:);
+%         D(:) >= 0; B(:) >= 0;
+%         B(BC_mask) == 0;
+%         diag(D) == 0;
+%         ones(N,1) == [B D]*ones(N+N_s,1);
+% cvx_end
+
+% call for the cvx codes for parfor
+[D,B] = solve_nsi_cvx(op_exp_result,BC_mask,N,N_s);
 
 % re-normalize D & B...
 D_hat_norm = diag(1 ./ (1 - diag(D))) * D; 
@@ -110,8 +108,10 @@ SUPPORT_MSD(nnn,mc_sim) = sum(sum(max((D_normalize>0)-D_hat_binary,0)));
 MSE_B(nnn,mc_sim) = sum( sum( (B_hat_norm - B_normalize).^2 ) ) / sum(B_normalize(:).^2);
 
 D_true_size(nnn,mc_sim) = sum(G(:));
-fprintf('MSE in D: %f, MSE in B: %f, SUPPORT Error in D: %i \n',MSE_D(nnn,mc_sim),...
-    MSE_B(nnn,mc_sim), SUPPORT_D(nnn,mc_sim) );
+
+fprintf('No of stubborn agents used: %i, MC Sim no: %i\n No. of present links : %i\n MSE in D: %f, MSE in B: %f, SUPPORT Error in D: %i \n',...
+    N_s,mc_sim,sum(G(:)),MSE_D(nnn,mc_sim),...
+    MSE_B(nnn,mc_sim), SUPPORT_D(nnn,mc_sim));
 
 end
 
