@@ -1,10 +1,10 @@
+function beta = eval_b_fun(d,p)
 % program to evaluate the required beta based on the constants
 % i.e., Theorem 1 in the journal
 % Written on 05.18.2015
 
-n = 100;
-d = 5; % the constatnt degree
-p = log(n)/n; % the probability
+% d = 5; % the constatnt degree
+% p = log(n)/n; % the probability
 
 % these are some constants as defined in the theorem...
 delta = 1 - 1 / (d-1);
@@ -15,4 +15,4 @@ beta = 0.001 : 0.001 : 0.99;
 metric = mu*log2( beta / mu )*(d -1) - (b_ent(mu) + beta.*b_ent(mu./beta));
 
 % print out the beta that we needed...
-beta(min(find(metric > 0)))
+beta = beta(min(find(metric > 0)));
