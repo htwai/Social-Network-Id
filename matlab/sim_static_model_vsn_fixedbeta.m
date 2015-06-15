@@ -7,7 +7,7 @@ clc; clear all; close all;
 % The simulation consists of two parts --> 1. generate the asymptotic
 % opinion held by diff. users; 2. infer B,D from the asymptotic opinion.
 N_choice = 20 : 5 : 100;
-no_mc = 1e2;
+no_mc = 1e3;
 
 for nnn = 1 : length(N_choice)
 %%%%%% System Parameters %%%%%%%%%%%%%%%%%%
@@ -15,7 +15,7 @@ N = N_choice(nnn); % there are N agents (non-stubborn)
 
 p = 0.08; % the connectivity between the normal agents
 
-d_s = 4; % uniform degree for the Stubborn-Non-Stubborn graph
+d_s = 5; % uniform degree for the Stubborn-Non-Stubborn graph
 
 N_s = ceil(N*eval_b_fun(d_s,p)); % there are $N_s$ stubborn agents, which are probes that we can exploit
           % for simplicity, we assume that these stubborn agents form a
@@ -117,8 +117,8 @@ MSE_B(nnn,mc_sim) = sum( sum( (B_hat_norm - B_normalize).^2 ) ) / sum(B_normaliz
 
 D_true_size(nnn,mc_sim) = sum(G(:));
 
-fprintf('No of stubborn agents used: %i, MC Sim no: %i\n No. of present links : %i\n MSE in D: %f, MSE in B: %f, SUPPORT Error in D: %i \n',...
-    N_s,mc_sim,sum(G(:)),MSE_D(nnn,mc_sim),...
+fprintf('No of agents: %i, No of stubborn agents used: %i, MC Sim no: %i\n No. of present links : %i\n MSE in D: %f, MSE in B: %f, SUPPORT Error in D: %i \n',...
+    N,N_s,mc_sim,sum(G(:)),MSE_D(nnn,mc_sim),...
     MSE_B(nnn,mc_sim), SUPPORT_D(nnn,mc_sim));
 
 end
