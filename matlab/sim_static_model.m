@@ -36,13 +36,8 @@ for mc_sim = 1 : no_mc
 % G = triu(G,1); G = G + G'; G = G > 0;
 
 % Strogatz Watts Case
-<<<<<<< HEAD
 % G = full(smallw(N,1,0.5));
 G = full(wattsstrogatz(N,0.08,0.08));
-=======
-% G = full(smallw(N,1,0.1));
-% G = full(wattsstrogatz(N,0.08,0.08));
->>>>>>> 4cdff23d08d779d86c35f3e514fa2301b5cb78d7
 
 % Pref.-Attachment Case (BA Model)
 % G = full(pref(N));
