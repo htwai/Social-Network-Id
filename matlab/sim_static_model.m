@@ -20,7 +20,7 @@ p = 0.1; % the connectivity between the normal agents
 d_s = 5; % uniform degree for the Stubborn-Non-Stubborn graph
 % p_s = 0.1; % sparsity ER for the Stubborn-Normal graph
 
-total_exp = 100; % no of experiments we are running
+total_exp = 500; % no of experiments we are running
 
 parfor mc_sim = 1 : no_mc
      
