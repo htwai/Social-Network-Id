@@ -19,7 +19,7 @@ N = size(A,1);
 % In the Reed's College data set, there are 962 individuals in the social
 % network, so I choose ~150 most influential agents & mark them as my
 % stubborn agents
-N_s = 200; % there are $N_s$ stubborn agents, which are probes that we can exploit
+N_s = 250; % there are $N_s$ stubborn agents, which are probes that we can exploit
           % for simplicity, we assume that these stubborn agents form a
           % co-clique on their own.
 
