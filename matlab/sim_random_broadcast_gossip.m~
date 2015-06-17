@@ -19,34 +19,46 @@ N = size(A,1);
 % In the Reed's College data set, there are 962 individuals in the social
 % network, so I choose ~150 most influential agents & mark them as my
 % stubborn agents
-N_s = 200; % there are $N_s$ stubborn agents, which are probes that we can exploit
+N_s = 100; % there are $N_s$ stubborn agents, which are probes that we can exploit
           % for simplicity, we assume that these stubborn agents form a
           % co-clique on their own.
 
-% Retrieve $G$ by permutation
-[degree_seq,idx] = sort( sum(A) , 'descend' );
+% d_s = 10;
+% % Generate the topology from stubborn to normal agents 
+% G_sn = zeros(N_s,N);
+% for nn = 1 : N
+%     G_sn(randperm(N_s,d_s),nn) = 1;
+% end
+% 
+% G_com = zeros(N+N_s);
+% G_com(N_s+1:end,:) = [G_sn' A];
+% G = A;
 
-G_com = A( [idx(1:N_s) setdiff(1:N,idx(1:N_s))],[idx(1:N_s) setdiff(1:N,idx(1:N_s))] ); 
-G_com(1:N_s,1:N_s) = zeros(N_s);
+% % Retrieve $G$ by permutation
+% [degree_seq,idx] = sort( sum(A) , 'descend' );
+% G_com = A( [idx((N-N_s)/2 : (N+N_s)/2-1) setdiff(1:N,idx((N-N_s)/2 : (N+N_s)/2-1))],...
+%     [idx((N-N_s)/2 : (N+N_s)/2-1) setdiff(1:N,idx((N-N_s)/2 : (N+N_s)/2-1))] ); 
+% G_com(1:N_s,:) = 0;
+% 
+% G = G_com(N_s+1:end,N_s+1:end);
+% G_sn = G_com(N_s+1:end,1:N_s);
 
-G = G_com(N_s+1:end,N_s+1:end);
-G_sn = G_com(N_s+1:end,1:N_s);
 
 %% Next part
 
 %%%%%% Part 1 of the simulation %%%%%%%%%%%
 total_exp = 2*N_s; % we run a total number of 2N_s experiments
-init_op = rand(N,total_exp);
+init_op = rand(N+N_s,total_exp);
 
 % we use the randomized broadcast gossip model!
 % generate the "C" matrix used --> it only needs to be row stochastic
 % C = ones(N+N_s,N+N_s); 
-C = ones(N,N) / 2; 
-C = (G_com+eye(N)).*C;
+C = ones(N+N_s,N+N_s) / 2; 
+C = (G_com+eye(N+N_s)).*C;
 C(1:N_s,:) = 0; C(1:N_s,1:N_s) = eye(N_s);
 % C = C ./ repmat( sum(C,2), 1, N+N_s);
 % find the average W
-W_bar = eye(N) - diag(C*ones(N,1)) / (N) + C / (N);
+W_bar = eye(N+N_s) - diag(C*ones(N+N_s,1)) / (N+N_s) + C / (N+N_s);
 
 %% We can run the static model first... for comparison
 W_inf = W_bar^1e4;
@@ -63,45 +75,69 @@ BC_mask = vec( W_bar(N_s+1:end,1:N_s) == 0 );
 
 % Compute Y*pinv(Z)
 YZ = op_exp_result(N_s+1:end,:)*((op_exp_result(1:N_s,:)*op_exp_result(1:N_s,:)')^-1*op_exp_result(1:N_s,:))'...
-    + 0.00*randn(N-N_s,N_s);
+    + 0.00*randn(N,N_s);
 % the last term is the noise observed
 
-Nt = N - N_s;
-gamma = 0.0001*Nt;
-lambda = 1e4;
+Nt = N;
+gamma = 0;
+lambda = 1e8;
 
 %%%%%%%%%%%%%%%%% We use a projected gradient here... %%%%%%%%
 D_i = zeros(Nt); % initialization with zero matrices
 B_i = zeros(Nt,N_s); 
 obj = norm( B_i - (eye(Nt)-D_i)*YZ, 'fro'); % initial objective
-alpha = 0.1; % use a constant step size for the inner PG loop
+alpha = 0.05; % use a constant step size for the inner PG loop
 
-for pg_iter = 1 : 5e2
+l_nesterov = 0; % nesterov step size
+
+ratio_iter = zeros(1,10e2);
+tD = zeros(Nt); tB = zeros(Nt,N_s);
+for pg_iter = 1 : 10e2
     % The projected, proximal gradient tries to minimize this:
     % min_{B,D \in C} ||D||_1 + lambda*||B-(I-D)X||_F^2 + gamma*||B1 + D1 - 1||_2^2
+    tD_old = tD; tB_old = tB;
     D_old = D_i; B_old = B_i;
     % for B
     gB = (2*B_i - 2*(YZ-D_old*YZ)) + 2*(gamma/lambda)*(D_old*ones(Nt,N_s)+B_old*ones(N_s)-ones(Nt,N_s));
     % projected gradient
-    tB = max(0,B_i - alpha*gB); tB(BC_mask) = 0; B_i = tB;
+    tB = max(0,B_i - alpha*gB); tB(BC_mask) = 0; 
     % for D
     gD = ( 2*D_i *(YZ*YZ') - 2*(YZ-B_old)*YZ' ) + 2*(gamma/lambda)*(D_old*ones(Nt)+B_old*ones(N_s,Nt)-ones(Nt));
     % project it back...
     tD = D_i - alpha*gD; tD = tD - diag(diag(tD));
+%     D_i = tD;
     % one sided proximal update
-    tD = (tD>= (1/lambda)).*(tD - (1/lambda)); D_i = tD;
+    tD = (tD>= (1/lambda)).*(tD - (1/lambda)); 
     obj = norm( B_i - (eye(Nt)-D_i)*YZ, 'fro');
+    
+    l_nestold = l_nesterov;
+    l_nesterov = 0.5*(1 + sqrt(1 + 4*l_nesterov^2) );
+    gam_nesterov = (1 - l_nestold) / l_nesterov;
+    
+    D_i = tD + gam_nesterov*(tD_old - tD);
+    B_i = tB + gam_nesterov*(tB_old - tB);
+    
+    
+    % normalize the sum to 1
+    sum_row = [D_i B_i]*ones(N+N_s,1);
+    % normalize the row sum
+    D = D_i ./ max(1e-15,repmat(sum_row,1,Nt)); B = B_i ./ max(1e-15,repmat(sum_row,1,N_s));
+    ratio_iter(pg_iter) = sum( sum( (D - D_normalize).^2 ) ) / sum(D_normalize(:).^2);
+%     sum( sum( (B - B_normalize).^2 ) ) / sum(B_normalize(:).^2)
 end
 
-% normalize the sum to 1
-sum_row = [D_i B_i]*ones(N,1);
 
-% normalize the row sum
-D = D_i ./ max(1e-10,repmat(sum_row,1,Nt)); B = B_i ./ max(1e-10,repmat(sum_row,1,N_s));
+plot(ratio_iter);
 
-sum( sum( (D - D_normalize).^2 ) ) / sum(D_normalize(:).^2)
-
-sum( sum( (B - B_normalize).^2 ) ) / sum(B_normalize(:).^2)
+% % normalize the sum to 1
+% sum_row = [D_i B_i]*ones(N+N_s,1);
+% 
+% % normalize the row sum
+% D = D_i ./ max(1e-10,repmat(sum_row,1,Nt)); B = B_i ./ max(1e-10,repmat(sum_row,1,N_s));
+% 
+% sum( sum( (D - D_normalize).^2 ) ) / sum(D_normalize(:).^2)
+% 
+% sum( sum( (B - B_normalize).^2 ) ) / sum(B_normalize(:).^2)
 
 % %% Next
 % 

@@ -7,7 +7,7 @@ clc; clear all; close all;
 % The simulation consists of two parts --> 1. generate the asymptotic
 % opinion held by diff. users; 2. infer B,D from the asymptotic opinion.
 N_s_choice = 20 : 2 : 46;
-no_mc = 100;
+no_mc = 1;
 
 for nnn = 1 : length(N_s_choice)
 %%%%%% System Parameters %%%%%%%%%%%%%%%%%%
@@ -22,7 +22,7 @@ d_s = 5; % uniform degree for the Stubborn-Non-Stubborn graph
 
 total_exp = 100; % no of experiments we are running
 
-parfor mc_sim = 1 : no_mc
+for mc_sim = 1 : no_mc
      
 % Erdos Renyi case
 % Generate the graph between the normal agents --> the network topology
@@ -31,10 +31,11 @@ parfor mc_sim = 1 : no_mc
 % G = triu(G,1); G = G + G'; G = G > 0;
 
 % Strogatz Watts Case
-% G = full(smallw(N,1,0.1));
+% G = full(smallw(N,1,0.5));
+G = full(wattsstrogatz(N,0.08,0.08));
 
 % Pref.-Attachment Case (BA Model)
-G = full(pref(N));
+% G = full(pref(N));
 
 % Generate the topology from stubborn to normal agents 
 G_sn = zeros(N_s,N);
