@@ -6,7 +6,7 @@ clc; clear all; close all;
 
 % The simulation consists of two parts --> 1. generate the asymptotic
 % opinion held by diff. users; 2. infer B,D from the asymptotic opinion.
-N_s_choice = 20 : 2 : 46;
+N_s_choice = 20 : 2 : 52;
 no_mc = 100;
 
 for nnn = 1 : length(N_s_choice)
@@ -32,6 +32,7 @@ parfor mc_sim = 1 : no_mc
 
 % Strogatz Watts Case
 % G = full(smallw(N,1,0.1));
+% G = full(wattsstrogatz(N,0.08,0.08));
 
 % Pref.-Attachment Case (BA Model)
 G = full(pref(N));
