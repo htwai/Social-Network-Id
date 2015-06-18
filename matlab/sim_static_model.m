@@ -6,8 +6,8 @@ clc; clear all; close all;
 
 % The simulation consists of two parts --> 1. generate the asymptotic
 % opinion held by diff. users; 2. infer B,D from the asymptotic opinion.
-N_s_choice = 20 : 2 : 52;
-no_mc = 500;
+N_s_choice = 20 : 2 : 46;
+no_mc = 1000;
 
 for nnn = 1 : length(N_s_choice)
 %%%%%% System Parameters %%%%%%%%%%%%%%%%%%

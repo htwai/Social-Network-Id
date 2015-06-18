@@ -17,9 +17,9 @@ load Reed98_justA; % load the data file from Reed's College
 N = size(A,1);
 
 % In the Reed's College data set, there are 962 individuals in the social
-% network, so I choose ~150 most influential agents & mark them as my
+% network, so I choose ~150 moderately influential agents & mark them as my
 % stubborn agents
-N_s = 100; % there are $N_s$ stubborn agents, which are probes that we can exploit
+N_s = 180; % there are $N_s$ stubborn agents, which are probes that we can exploit
           % for simplicity, we assume that these stubborn agents form a
           % co-clique on their own.
 
@@ -44,15 +44,15 @@ G = G_com(N_s+1:end,N_s+1:end);
 G_sn = G_com(N_s+1:end,1:N_s);
 
 % remove the hidden nodes that are not exposed to ANY stubborn agents
-% isol_b = G_sn*ones(N_s,1);
-% idx_set = find(isol_b == 0);
-% 
-% G_sn = G_sn(setdiff(1:N-N_s,idx_set),:);
-% G = G(setdiff(1:N-N_s,idx_set),setdiff(1:N-N_s,idx_set));
-% 
-% N = size(G,2) + size(G_sn,2);
-% G_com = zeros(N);
-% G_com(N_s+1:end,:) = [G_sn G];
+isol_b = G_sn*ones(N_s,1);
+idx_set = find(isol_b == 0);
+
+G_sn = G_sn(setdiff(1:N-N_s,idx_set),:);
+G = G(setdiff(1:N-N_s,idx_set),setdiff(1:N-N_s,idx_set));
+
+N = size(G,2) + size(G_sn,2);
+G_com = zeros(N);
+G_com(N_s+1:end,:) = [G_sn G];
 
 
 %% Next part
@@ -91,8 +91,8 @@ YZ = op_exp_result(N_s+1:end,:)*((op_exp_result(1:N_s,:)*op_exp_result(1:N_s,:)'
     + 0.00*randn(Nt,N_s);
 % the last term is the noise observed
 
-gamma = 0.00*Nt;
-lambda = 1e9;
+gamma = 0.01*Nt;
+lambda = 1e7;
 
 %%%%%%%%%%%%%%%%% We use a projected gradient here... %%%%%%%%
 D_i = zeros(Nt); % initialization with zero matrices
