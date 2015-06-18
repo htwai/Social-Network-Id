@@ -17,9 +17,9 @@ load Reed98_justA; % load the data file from Reed's College
 N = size(A,1);
 
 % In the Reed's College data set, there are 962 individuals in the social
-% network, so I choose ~150 most influential agents & mark them as my
+% network, so I choose ~150 moderately influential agents & mark them as my
 % stubborn agents
-N_s = 00; % there are $N_s$ stubborn agents, which are probes that we can exploit
+N_s = 180; % there are $N_s$ stubborn agents, which are probes that we can exploit
           % for simplicity, we assume that these stubborn agents form a
           % co-clique on their own.
 
@@ -42,6 +42,17 @@ G_com(1:N_s,:) = 0;
 
 G = G_com(N_s+1:end,N_s+1:end);
 G_sn = G_com(N_s+1:end,1:N_s);
+
+% remove the hidden nodes that are not exposed to ANY stubborn agents
+isol_b = G_sn*ones(N_s,1);
+idx_set = find(isol_b == 0);
+
+G_sn = G_sn(setdiff(1:N-N_s,idx_set),:);
+G = G(setdiff(1:N-N_s,idx_set),setdiff(1:N-N_s,idx_set));
+
+N = size(G,2) + size(G_sn,2);
+G_com = zeros(N);
+G_com(N_s+1:end,:) = [G_sn G];
 
 
 %% Next part
@@ -76,18 +87,20 @@ BC_mask = vec( W_bar(N_s+1:end,1:N_s) == 0 );
 
 Nt = Ntotal-N_s;
 % Compute Y*pinv(Z)
-YZ = op_exp_result(N_s+1:end,:)*((op_exp_result(1:N_s,:)*op_exp_result(1:N_s,:)')^-1*op_exp_result(1:N_s,:))'...
-    + 0.00*randn(Nt,N_s);
+% YZ = op_exp_result(N_s+1:end,:)*((op_exp_result(1:N_s,:)*op_exp_result(1:N_s,:)')^-1*op_exp_result(1:N_s,:))'...
+%     + 0.00*randn(Nt,N_s);
+
+Y = op_exp_result(N_s+1:end,:); Z = op_exp_result(1:N_s,:);
 % the last term is the noise observed
 
-gamma = 0.1*Nt;
-lambda = 1e5;
+gamma = 0.0*Nt;
+lambda = inf;
 
 %%%%%%%%%%%%%%%%% We use a projected gradient here... %%%%%%%%
 D_i = zeros(Nt); % initialization with zero matrices
 B_i = zeros(Nt,N_s); 
 obj = norm( B_i - (eye(Nt)-D_i)*YZ, 'fro'); % initial objective
-alpha = 0.08; % use a constant step size for the inner PG loop
+alpha = 0.001; % use a constant step size for the inner PG loop
 
 l_nesterov = 0; % nesterov step size
 
@@ -99,11 +112,11 @@ for pg_iter = 1 : 100e2
     tD_old = tD; tB_old = tB;
     D_old = D_i; B_old = B_i;
     % for B
-    gB = (2*B_i - 2*(YZ-D_old*YZ)) + 2*(gamma/lambda)*(D_old*ones(Nt,N_s)+B_old*ones(N_s)-ones(Nt,N_s));
+    gB = (2*B_i*(Z*Z') - 2*(Y-D_old*Y)*Z') + 2*(gamma/lambda)*(D_old*ones(Nt,N_s)+B_old*ones(N_s)-ones(Nt,N_s));
     % projected gradient
     tB = max(0,B_i - alpha*gB); tB(BC_mask) = 0; 
     % for D
-    gD = ( 2*D_i *(YZ*YZ') - 2*(YZ-B_old)*YZ' ) + 2*(gamma/lambda)*(D_old*ones(Nt)+B_old*ones(N_s,Nt)-ones(Nt));
+    gD = ( 2*D_i *(Y*Y') - 2*(Y-B_old*Z)*Y' ) + 2*(gamma/lambda)*(D_old*ones(Nt)+B_old*ones(N_s,Nt)-ones(Nt));
     % project it back...
     tD = D_i - alpha*gD; tD = tD - diag(diag(tD));
 %     D_i = tD;

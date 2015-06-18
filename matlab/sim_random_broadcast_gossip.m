@@ -89,32 +89,37 @@ Nt = Ntotal-N_s;
 % Compute Y*pinv(Z)
 YZ = op_exp_result(N_s+1:end,:)*((op_exp_result(1:N_s,:)*op_exp_result(1:N_s,:)')^-1*op_exp_result(1:N_s,:))'...
     + 0.00*randn(Nt,N_s);
+
+Y = op_exp_result(N_s+1:end,:); Z = op_exp_result(1:N_s,:);
 % the last term is the noise observed
 
-gamma = 0.01*Nt;
-lambda = 1e7;
+gamma = 0.0*Nt;
+lambda = inf;
 
 %%%%%%%%%%%%%%%%% We use a projected gradient here... %%%%%%%%
 D_i = zeros(Nt); % initialization with zero matrices
 B_i = zeros(Nt,N_s); 
 obj = norm( B_i - (eye(Nt)-D_i)*YZ, 'fro'); % initial objective
-alpha = 0.08; % use a constant step size for the inner PG loop
+alpha = 0.01; % use a constant step size for the inner PG loop
+% alpha = 0.5/(norm((Y*Y')));
 
 l_nesterov = 0; % nesterov step size
 
-ratio_iter = zeros(1,100e2);
+ratio_iter = zeros(1,1000e2);
 tD = zeros(Nt); tB = zeros(Nt,N_s);
-for pg_iter = 1 : 100e2
+for pg_iter = 1 : 1000e2
     % The projected, proximal gradient tries to minimize this:
     % min_{B,D \in C} ||D||_1 + lambda*||B-(I-D)X||_F^2 + gamma*||B1 + D1 - 1||_2^2
     tD_old = tD; tB_old = tB;
     D_old = D_i; B_old = B_i;
     % for B
-    gB = (2*B_i - 2*(YZ-D_old*YZ)) + 2*(gamma/lambda)*(D_old*ones(Nt,N_s)+B_old*ones(N_s)-ones(Nt,N_s));
+%     gB = (2*B_i*(Z*Z') - 2*(Y-D_old*Y)*Z') + 2*(gamma/lambda)*(D_old*ones(Nt,N_s)+B_old*ones(N_s)-ones(Nt,N_s));
+    gB = ( 2*B_i - 2*(YZ-D_old*YZ) ) + 2*(gamma/lambda)*(D_old*ones(Nt,N_s)+B_old*ones(N_s)-ones(Nt,N_s));
     % projected gradient
     tB = max(0,B_i - alpha*gB); tB(BC_mask) = 0; 
     % for D
-    gD = ( 2*D_i *(YZ*YZ') - 2*(YZ-B_old)*YZ' ) + 2*(gamma/lambda)*(D_old*ones(Nt)+B_old*ones(N_s,Nt)-ones(Nt));
+%     gD = ( 2*D_i *(Y*Y') - 2*(Y-B_old*Z)*Y' ) + 2*(gamma/lambda)*(D_old*ones(Nt)+B_old*ones(N_s,Nt)-ones(Nt));
+    gD = (2*D_i*(YZ*YZ') - 2*(YZ-B_old)*YZ') + 2*(gamma/lambda)*(D_old*ones(Nt)+B_old*ones(N_s,Nt)-ones(Nt));
     % project it back...
     tD = D_i - alpha*gD; tD = tD - diag(diag(tD));
 %     D_i = tD;
