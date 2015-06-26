@@ -64,7 +64,7 @@ W_bar = eye(Ntotal) - diag(C*ones(Ntotal,1)) / (Ntotal) + C / (Ntotal);
 %% Now we can run our simulated experiments!
 % Let's run the simulation for the random exchange model
 
-flag = 1;
+flag = 0;
 
 if flag == 1
 
@@ -133,13 +133,15 @@ YZ = op_exp_result(N_s+1:end,:)*((op_exp_result(1:N_s,:)*op_exp_result(1:N_s,:)'
 
 Y = op_exp_result(N_s+1:end,:); Z = op_exp_result(1:N_s,:);
 
+ZZ = Z*Z'; YZt = Y*Z'; YY = Y*Y';
+
 gamma = 0.001;
 lambda = 1e10/Nt;
 % lambda = inf;
 
 %%%%%%%%%%%%%%%%% We use a projected gradient here... %%%%%%%%
-D_i = zeros(Nt); % initialization with zero matrices
-B_i = zeros(Nt,N_s); 
+D_i = (zeros(Nt)); % initialization with zero matrices
+B_i = sparse(zeros(Nt,N_s)); 
 obj = norm( B_i - (eye(Nt)-D_i)*YZ, 'fro'); % initial objective
 % alpha = 0.01; % use a constant step size for the inner PG loop
 alpha = 0.5/(norm((Y*Y')));
@@ -156,12 +158,12 @@ for pg_iter = 1 : 100e3
     tD_old = tD; tB_old = tB;
     D_old = D_i; B_old = B_i;
     % for B
-    gB = (2*B_i*(Z*Z') - 2*(Y-D_old*Y)*Z') + 2*(gamma/lambda)*(D_old*ones(Nt,N_s)+B_old*ones(N_s)-ones(Nt,N_s));
+    gB = (2*B_i*(ZZ) - 2*(YZt-D_old*YZt)) + 2*(gamma/lambda)*(D_old*ones(Nt,N_s)+B_old*ones(N_s)-ones(Nt,N_s));
 %     gB = ( 2*B_i - 2*(YZ-D_old*YZ) ) + 2*(gamma/lambda)*(D_old*ones(Nt,N_s)+B_old*ones(N_s)-ones(Nt,N_s));
     % projected gradient
     tB = max(0,B_i - alpha*gB); tB(BC_mask) = 0; 
     % for D
-    gD = ( 2*D_i *(Y*Y') - 2*(Y-B_old*Z)*Y' ) + 2*(gamma/lambda)*(D_old*ones(Nt)+B_old*ones(N_s,Nt)-ones(Nt));
+    gD = ( 2*D_i *(YY) - 2*(YY-B_old*YZt') ) + 2*(gamma/lambda)*(D_old*ones(Nt)+B_old*ones(N_s,Nt)-ones(Nt));
 %     gD = (2*D_i*(YZ*YZ') - 2*(YZ-B_old)*YZ') + 2*(gamma/lambda)*(D_old*ones(Nt)+B_old*ones(N_s,Nt)-ones(Nt));
     % project it back...
     tD = D_i - alpha*gD; tD = tD - diag(diag(tD));
