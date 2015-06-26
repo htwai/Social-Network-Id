@@ -52,7 +52,8 @@ init_op = rand(Ntotal,total_exp);
 % we use the randomized broadcast gossip model!
 % generate the "C" matrix used --> it only needs to be row stochastic
 % C = ones(N+N_s,N+N_s); 
-C = ones(Ntotal,Ntotal) / 2; 
+C = rand(Ntotal,Ntotal); % I want a random C to begin with, C only need to be 0,1
+
 C = (G_com+eye(Ntotal)).*C;
 C(1:N_s,:) = 0; C(1:N_s,1:N_s) = eye(N_s);
 % C = C ./ repmat( sum(C,2), 1, N+N_s);
@@ -63,39 +64,53 @@ W_bar = eye(Ntotal) - diag(C*ones(Ntotal,1)) / (Ntotal) + C / (Ntotal);
 %% Now we can run our simulated experiments!
 % Let's run the simulation for the random exchange model
 
-op_exp_result = zeros(N,total_exp);
-T0 = 1e3; no_gossip = 1e4; no_samples = 1e4-1e3-1;
+flag = 1;
 
-C = sparse(C);
+if flag == 1
+
+op_exp_result = zeros(N,total_exp);
+T0 = 1e5; no_gossip = 500e5; no_samples = 5e5;
+
+% C = sparse(C);
 % % Let's use the standard randomized gossip exchange...
-for eee = 1 : total_exp
+parfor eee = 1 : total_exp
     x_op = init_op(:,eee);
     % for randomized broadcast gossip
-    sample_instance = T0+randperm(s,no_gossip-(T0+1),no_samples);
-    x_op_sample = zeros(N,length(sample_instance));
+    sample_instance = sort(T0+randperm(s,no_gossip-(T0+1),no_samples),'ascend');
     cnt_sample = 1;
     % now, utilize the randomized gossip exchange...
     for gossip_round = 1 : no_gossip
         src_node = randi(N,1,1); % choose the node to wake up
-        ek = zeros(N,1); ek(src_node) = 1;
-        W_cur = eye(N) - diag( C(:,src_node) ) + C(:,src_node)*ek';
-        x_op = W_cur*x_op;
+        x_op(N_s+1:end) = (1-C(N_s+1:end,src_node)).*x_op(N_s+1:end) + C(N_s+1:end,src_node)*x_op(src_node);
 
-        if ~isempty(find(sample_instance==gossip_round,1))
+        if gossip_round == sample_instance(cnt_sample)
             % take samples of x_op & Mul_accu
-            x_op_sample(:,cnt_sample) = x_op + 0.01*randn(N,1);
+            if cnt_sample == 1
+                x_op_ra = x_op + 0.001*randn(N,1);
+            else
+                x_op_ra = (1 - 1/cnt_sample)*x_op_ra + (1/cnt_sample)*(x_op+0.001*randn(N,1));
+            end
             cnt_sample = cnt_sample + 1;
         end
+        if cnt_sample > no_samples
+            % no more samples are needed
+            break;
+        end
+        
     end
 
     fprintf('%i ',eee);
     % sanity check
-    x_result = x_op_sample*ones(no_samples,1) / no_samples;
-    norm(W_bar^1e5 * init_op(:,eee) - x_result,2)^2 / N % normalized error
+    x_result = x_op_ra;
+    norm(W_bar^1e7 * init_op(:,eee) - x_result,2)^2 / N % normalized error
     op_exp_result(:,eee) = x_result;
     
 end
 fprintf('\n');
+
+else
+    op_exp_result = (W_bar)^1e7 * init_op;
+end
 
 
 
@@ -116,35 +131,38 @@ Nt = Ntotal-N_s;
 % Compute Y*pinv(Z)
 YZ = op_exp_result(N_s+1:end,:)*((op_exp_result(1:N_s,:)*op_exp_result(1:N_s,:)')^-1*op_exp_result(1:N_s,:))';
 
-% Y = op_exp_result(N_s+1:end,:); Z = op_exp_result(1:N_s,:);
+Y = op_exp_result(N_s+1:end,:); Z = op_exp_result(1:N_s,:);
 
-gamma = 0.01*Nt;
-lambda = 1e8;
+gamma = 0.001;
+lambda = 1e10/Nt;
+% lambda = inf;
 
 %%%%%%%%%%%%%%%%% We use a projected gradient here... %%%%%%%%
 D_i = zeros(Nt); % initialization with zero matrices
 B_i = zeros(Nt,N_s); 
 obj = norm( B_i - (eye(Nt)-D_i)*YZ, 'fro'); % initial objective
-alpha = 0.01; % use a constant step size for the inner PG loop
-% alpha = 0.5/(norm((Y*Y')));
+% alpha = 0.01; % use a constant step size for the inner PG loop
+alpha = 0.5/(norm((Y*Y')));
 
 l_nesterov = 0; % nesterov step size
 
-ratio_iter = zeros(1,10e2);
+ratio_iter = zeros(1,100e3); obj_iter = ratio_iter;
 tD = zeros(Nt); tB = zeros(Nt,N_s);
-for pg_iter = 1 : 10e2
+
+min_ratio = inf;
+for pg_iter = 1 : 100e3
     % The projected, proximal gradient tries to minimize this:
     % min_{B,D \in C} ||D||_1 + lambda*||B-(I-D)X||_F^2 + gamma*||B1 + D1 - 1||_2^2
     tD_old = tD; tB_old = tB;
     D_old = D_i; B_old = B_i;
     % for B
-%     gB = (2*B_i*(Z*Z') - 2*(Y-D_old*Y)*Z') + 2*(gamma/lambda)*(D_old*ones(Nt,N_s)+B_old*ones(N_s)-ones(Nt,N_s));
-    gB = ( 2*B_i - 2*(YZ-D_old*YZ) ) + 2*(gamma/lambda)*(D_old*ones(Nt,N_s)+B_old*ones(N_s)-ones(Nt,N_s));
+    gB = (2*B_i*(Z*Z') - 2*(Y-D_old*Y)*Z') + 2*(gamma/lambda)*(D_old*ones(Nt,N_s)+B_old*ones(N_s)-ones(Nt,N_s));
+%     gB = ( 2*B_i - 2*(YZ-D_old*YZ) ) + 2*(gamma/lambda)*(D_old*ones(Nt,N_s)+B_old*ones(N_s)-ones(Nt,N_s));
     % projected gradient
     tB = max(0,B_i - alpha*gB); tB(BC_mask) = 0; 
     % for D
-%     gD = ( 2*D_i *(Y*Y') - 2*(Y-B_old*Z)*Y' ) + 2*(gamma/lambda)*(D_old*ones(Nt)+B_old*ones(N_s,Nt)-ones(Nt));
-    gD = (2*D_i*(YZ*YZ') - 2*(YZ-B_old)*YZ') + 2*(gamma/lambda)*(D_old*ones(Nt)+B_old*ones(N_s,Nt)-ones(Nt));
+    gD = ( 2*D_i *(Y*Y') - 2*(Y-B_old*Z)*Y' ) + 2*(gamma/lambda)*(D_old*ones(Nt)+B_old*ones(N_s,Nt)-ones(Nt));
+%     gD = (2*D_i*(YZ*YZ') - 2*(YZ-B_old)*YZ') + 2*(gamma/lambda)*(D_old*ones(Nt)+B_old*ones(N_s,Nt)-ones(Nt));
     % project it back...
     tD = D_i - alpha*gD; tD = tD - diag(diag(tD));
 %     D_i = tD;
@@ -164,8 +182,18 @@ for pg_iter = 1 : 10e2
     % normalize the row sum
     D = D_i ./ max(1e-15,repmat(sum_row,1,Nt)); B = B_i ./ max(1e-15,repmat(sum_row,1,N_s));
     ratio_iter(pg_iter) = sum( sum( (D - D_normalize).^2 ) ) / sum(D_normalize(:).^2);
+    
+    obj_iter(pg_iter) = obj;
+    
+    if ratio_iter(pg_iter) < min_ratio
+        min_ratio = ratio_iter(pg_iter);
+        D_save = D;
+        B_save = B;
+    end
 %     sum( sum( (B - B_normalize).^2 ) ) / sum(B_normalize(:).^2)
 end
+
+
 
 
 plot(ratio_iter);
