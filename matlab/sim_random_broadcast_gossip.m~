@@ -136,23 +136,23 @@ Y = op_exp_result(N_s+1:end,:); Z = op_exp_result(1:N_s,:);
 ZZ = Z*Z'; YZt = Y*Z'; YY = Y*Y';
 
 gamma = 0.001;
-lambda = 1e10/Nt;
+lambda = 1e12/Nt;
 % lambda = inf;
 
 %%%%%%%%%%%%%%%%% We use a projected gradient here... %%%%%%%%
-D_i = sparse(zeros(Nt)); % initialization with zero matrices
-B_i = zeros(Nt,N_s); 
+D_i = (zeros(Nt)); % initialization with zero matrices
+B_i = sparse(zeros(Nt,N_s)); 
 obj = norm( B_i - (eye(Nt)-D_i)*YZ, 'fro'); % initial objective
 % alpha = 0.01; % use a constant step size for the inner PG loop
 alpha = 0.5/(norm((Y*Y')));
 
 l_nesterov = 0; % nesterov step size
 
-ratio_iter = zeros(1,0.1e3); obj_iter = ratio_iter;
+ratio_iter = zeros(1,100e3); obj_iter = ratio_iter;
 tD = zeros(Nt); tB = zeros(Nt,N_s);
 
 min_ratio = inf;
-for pg_iter = 1 : 0.1e3
+for pg_iter = 1 : 100e3
     % The projected, proximal gradient tries to minimize this:
     % min_{B,D \in C} ||D||_1 + lambda*||B-(I-D)X||_F^2 + gamma*||B1 + D1 - 1||_2^2
     tD_old = tD; tB_old = tB;

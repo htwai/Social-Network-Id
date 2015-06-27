@@ -136,7 +136,7 @@ Y = op_exp_result(N_s+1:end,:); Z = op_exp_result(1:N_s,:);
 ZZ = Z*Z'; YZt = Y*Z'; YY = Y*Y';
 
 gamma = 0.001;
-lambda = 1e10/Nt;
+lambda = 1e12/Nt;
 % lambda = inf;
 
 %%%%%%%%%%%%%%%%% We use a projected gradient here... %%%%%%%%
