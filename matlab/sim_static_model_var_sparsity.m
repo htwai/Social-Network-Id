@@ -14,7 +14,7 @@ no_mc = 100;
 for nnn = 1 : length(p_sparsity_choice)
 %%%%%% System Parameters %%%%%%%%%%%%%%%%%%
 N = 60; % there are N agents (non-stubborn)
-N_s = 24; % there are $N_s$ stubborn agents, which are probes that we can exploit
+N_s = 32; % there are $N_s$ stubborn agents, which are probes that we can exploit
           % for simplicity, we assume that these stubborn agents form a
           % co-clique on their own.
           
