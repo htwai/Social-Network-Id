@@ -15,7 +15,7 @@ N = N_choice(nnn); % there are N agents (non-stubborn)
 
 p = 0.08; % the connectivity between the normal agents
 
-d_s = 7; % uniform degree for the Stubborn-Non-Stubborn graph
+d_s = 6; % uniform degree for the Stubborn-Non-Stubborn graph
 
 N_s = ceil(N*eval_b_fun(d_s,p)); % there are $N_s$ stubborn agents, which are probes that we can exploit
           % for simplicity, we assume that these stubborn agents form a

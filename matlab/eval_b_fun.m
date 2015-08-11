@@ -9,7 +9,8 @@ function beta = eval_b_fun(d,p)
 % these are some constants as defined in the theorem...
 delta = 1 - 1 / (d-1);
 rho = d / (d-1);
-mu = (1 + rho*delta)*p;
+% mu = (1 + rho*delta)*p;
+mu = 2*p;
 beta = 0.001 : 0.001 : 0.99;
 
 metric = mu*log2( beta / mu )*(d -1) - (b_ent(mu) + beta.*b_ent(mu./beta));

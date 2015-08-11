@@ -151,15 +151,12 @@ l_nesterov = 0; % nesterov step size
 ratio_iter = zeros(1,100e3); obj_iter = ratio_iter;
 tD = zeros(Nt); tB = zeros(Nt,N_s);
 
-D_old = D_i; B_old = B_i;
-
 min_ratio = inf;
 for pg_iter = 1 : 100e3
     % The projected, proximal gradient tries to minimize this:
     % min_{B,D \in C} ||D||_1 + lambda*||B-(I-D)X||_F^2 + gamma*||B1 + D1 - 1||_2^2
-%     tD_old = tD; tB_old = tB;
-    D_i = D_i + (pg_iter / (pg_iter+3))*(D_i - D_old);
-    B_i = B_i + (pg_iter / (pg_iter+3))*(B_i - B_old);
+    tD_old = tD; tB_old = tB;
+    D_old = D_i; B_old = B_i;
     % for B
     gB = (2*B_i*(ZZ) - 2*(YZt-D_old*YZt)) + 2*(gamma/lambda)*(D_old*ones(Nt,N_s)+B_old*ones(N_s)-ones(Nt,N_s));
     % projected gradient
@@ -168,16 +165,16 @@ for pg_iter = 1 : 100e3
     gD = ( 2*D_i *(YY) - 2*(YY-B_old*YZt') ) + 2*(gamma/lambda)*(D_old*ones(Nt)+B_old*ones(N_s,Nt)-ones(Nt));
     % project it back...
     tD = D_i - alpha*gD; tD = tD - diag(diag(tD));
+%     D_i = tD;
     % one sided proximal update
     tD = (tD>= (1/lambda)).*(tD - (1/lambda)); 
     
-%     l_nestold = l_nesterov;
-%     l_nesterov = 0.5*(1 + sqrt(1 + 4*l_nesterov^2) );
-%     gam_nesterov = (1 - l_nestold) / l_nesterov;
-%     
-%     D_i = tD + gam_nesterov*(tD_old - tD);
-%     B_i = tB + gam_nesterov*(tB_old - tB);
-    D_i = tD; B_i = tB;
+    l_nestold = l_nesterov;
+    l_nesterov = 0.5*(1 + sqrt(1 + 4*l_nesterov^2) );
+    gam_nesterov = (1 - l_nestold) / l_nesterov;
+    
+    D_i = tD + gam_nesterov*(tD_old - tD);
+    B_i = tB + gam_nesterov*(tB_old - tB);
     
     obj = norm( B_i - (eye(Nt)-D_i)*YZ, 'fro');
     % normalize the sum to 1
@@ -187,8 +184,6 @@ for pg_iter = 1 : 100e3
     ratio_iter(pg_iter) = sum( sum( (D - D_normalize).^2 ) ) / sum(D_normalize(:).^2);
     
     obj_iter(pg_iter) = obj;
-    
-    D_old = D_i; B_old = B_i;
     
     if ratio_iter(pg_iter) < min_ratio
         min_ratio = ratio_iter(pg_iter);
