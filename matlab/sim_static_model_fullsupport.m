@@ -6,7 +6,7 @@ clc; clear all; close all;
 
 % The simulation consists of two parts --> 1. generate the asymptotic
 % opinion held by diff. users; 2. infer B,D from the asymptotic opinion.
-N_s_choice = 20 : 2 : 50;
+N_s_choice = 10 : 2 : 50;
 no_mc = 100;
 
 for nnn = 1 : length(N_s_choice)
@@ -16,9 +16,9 @@ N_s = N_s_choice(nnn); % there are $N_s$ stubborn agents, which are probes that 
           % for simplicity, we assume that these stubborn agents form a
           % co-clique on their own.
 
-p = 0.08; % the connectivity between the normal agents
+p = 0.1; % the connectivity between the normal agents
 d_s = 5; % uniform degree for the Stubborn-Non-Stubborn graph
-p_s = 0.15; % sparsity ER for the Stubborn-Normal graph
+p_s = 0.1; % sparsity ER for the Stubborn-Normal graph
 
 total_exp = 100; % no of experiments we are running
 
@@ -77,6 +77,9 @@ op_exp_result = W_inf*init_op;
 B_mask = vec( SE_G(N_s+1:end,1:N_s) > 0 );
 BC_mask = vec( SE_G(N_s+1:end,1:N_s) == 0 ); % I know the support of B
 
+D_mask = vec( SE_G(N_s+1:end,N_s+1:end) > 0 );
+DC_mask = vec( SE_G(N_s+1:end,N_s+1:end) == 0 ); % I know the support of B
+
 D_true = SE_G(N_s+1:end,N_s+1:end);
 B_true = SE_G(N_s+1:end,1:N_s);
 
@@ -104,7 +107,8 @@ B_normalize = diag(1 ./ max(1e-10,(1 - diag(D_true)))) * B_true;
 % cvx_end
 
 % call for the cvx codes for parfor
-[D,B] = solve_nsi_cvx(op_exp_result,BC_mask,N,N_s);
+% [D,B] = solve_nsi_cvx(op_exp_result,BC_mask,N,N_s);
+[D,B] = solve_nsi_cvx_full(op_exp_result,BC_mask,DC_mask,N,N_s);
 
 % re-normalize D & B...
 D_hat_norm = diag(1 ./ (1 - diag(D))) * D; 
@@ -127,6 +131,9 @@ D_true_size(nnn,mc_sim) = sum(G(:));
 fprintf('No of stubborn agents used: %i, MC Sim no: %i\n No. of present links : %i\n MSE in D: %f, MSE in B: %f, SUPPORT Error in D: %i \n',...
     N_s,mc_sim,sum(G(:)),MSE_D(nnn,mc_sim),...
     MSE_B(nnn,mc_sim), SUPPORT_D(nnn,mc_sim));
+
+% sum(B_mask) + sum(D_mask)
+% N_s*N
 
 end
 
