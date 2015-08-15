@@ -6,7 +6,7 @@ clc; clear all; close all;
 
 % The simulation consists of two parts --> 1. generate the asymptotic
 % opinion held by diff. users; 2. infer B,D from the asymptotic opinion.
-N_s_choice = 20 : 2 : 50;
+N_s_choice = 10 : 2 : 50;
 no_mc = 100;
 
 for nnn = 1 : length(N_s_choice)
@@ -16,13 +16,13 @@ N_s = N_s_choice(nnn); % there are $N_s$ stubborn agents, which are probes that 
           % for simplicity, we assume that these stubborn agents form a
           % co-clique on their own.
 
-p = 0.08; % the connectivity between the normal agents
+p = 0.1; % the connectivity between the normal agents
 d_s = 5; % uniform degree for the Stubborn-Non-Stubborn graph
-p_s = 0.15; % sparsity ER for the Stubborn-Normal graph
+p_s = 0.1; % sparsity ER for the Stubborn-Normal graph
 
 total_exp = 100; % no of experiments we are running
 
-for mc_sim = 1 : no_mc
+parfor mc_sim = 1 : no_mc
      
 % Erdos Renyi case
 % Generate the graph between the normal agents --> the network topology
@@ -38,18 +38,18 @@ G = triu(G,1); G = G + G'; G = G > 0;
 % G = full(pref(N));
 
 % Generate the topology from stubborn to normal agents 
-G_sn = zeros(N_s,N);
-while (min(ones(1,N_s)*G_sn) == 0) % to ensure the assumption is satisfied
-    G_sn = zeros(N_s,N);
-    for nn = 1 : N
-        G_sn(randperm(N_s,d_s),nn) = 1;
-    end
-end
-
-% gen G_sn by ER
 % G_sn = zeros(N_s,N);
 % while (min(ones(1,N_s)*G_sn) == 0) % to ensure the assumption is satisfied
-%     G_sn = rand(N_s,N) <= p_s;
+%     G_sn = zeros(N_s,N);
+%     for nn = 1 : N
+%         G_sn(randperm(N_s,d_s),nn) = 1;
+%     end
+% end
+
+% gen G_sn by ER
+G_sn = zeros(N_s,N);
+% while (min(ones(1,N_s)*G_sn) == 0) % to ensure the assumption is satisfied
+    G_sn = rand(N_s,N) <= p_s;
 % end
 
 G_com = [zeros(N_s) G_sn; G_sn' G]; % The augmented network with both stubborn and non-stubborn
