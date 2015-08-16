@@ -7,7 +7,7 @@ clc; clear all; close all;
 % The simulation consists of two parts --> 1. generate the asymptotic
 % opinion held by diff. users; 2. infer B,D from the asymptotic opinion.
 N_s_choice = 10 : 2 : 30;
-no_mc = 100;
+no_mc = 1;
 
 for nnn = 1 : length(N_s_choice)
 %%%%%% System Parameters %%%%%%%%%%%%%%%%%%
@@ -132,8 +132,12 @@ fprintf('No of stubborn agents used: %i, MC Sim no: %i\n No. of present links : 
     N_s,mc_sim,sum(G(:)),MSE_D(nnn,mc_sim),...
     MSE_B(nnn,mc_sim), SUPPORT_D(nnn,mc_sim));
 
-% sum(B_mask) + sum(D_mask)
-% N_s*N
+sum(B_mask) + sum(D_mask)
+N_s*N
+
+rank([op_exp_result(N_s+1:end,:)' op_exp_result(1:N_s,:)'])*N
+
+rank([op_exp_result(1:N_s,:)'*B_normalize'*(eye(N)-D_normalize')^(-1) op_exp_result(1:N_s,:)'])*N
 
 end
 

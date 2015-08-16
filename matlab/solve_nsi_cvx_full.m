@@ -5,13 +5,13 @@ cvx_solver('sedumi')
 cvx_begin
     variable D(N,N) 
     variable B(N,N_s)
-    minimize(  norm(D(:),1) );
+    minimize(  norm(op_exp_result(N_s+1:end,:) - D*op_exp_result(N_s+1:end,:) - B*op_exp_result(1:N_s,:),'fro') );
     subject to
         % op_exp_result(N_s+1:end,:) corresponds to the final opinions of
         % Non-stubborn agents, i.e., the matrix $Y$
         % op_exp_result(1:N_s,:) corresponds to the final/initial opinions
         % of stubborn agents, i.e., the matrix $Z$
-        op_exp_result(N_s+1:end,:) == D*op_exp_result(N_s+1:end,:) + B*op_exp_result(1:N_s,:);
+%         ;
         D(:) >= 0; B(:) >= 0;
         B(BC_mask) == 0;
         D(DC_mask) == 0;
