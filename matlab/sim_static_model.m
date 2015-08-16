@@ -141,7 +141,7 @@ mean_MSD = mean(SUPPORT_MSD');
 
 for iii = 1 : length(N_s_choice)
     idx_set1 = find( 1 - isnan(MSE_D(iii,:)) == 1 );
-    idx_set2 = find( MSE_B(iii,:) < 3 );
+    idx_set2 = find( MSE_B(iii,:) < 1);
     idx_set = intersect(idx_set1,idx_set2);
     mean_MD(iii) = mean(MSE_D(iii,idx_set));
     mean_MB(iii) = mean(MSE_B(iii,idx_set));
