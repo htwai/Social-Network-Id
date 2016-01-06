@@ -64,7 +64,7 @@ W_bar = eye(Ntotal) - diag(C*ones(Ntotal,1)) / (Ntotal) + C / (Ntotal);
 %% Now we can run our simulated experiments!
 % Let's run the simulation for the random exchange model
 
-flag = 0;
+flag = 1;
 
 if flag == 1
 
@@ -107,6 +107,9 @@ parfor eee = 1 : total_exp
     
 end
 fprintf('\n');
+
+fprintf('completed \n');
+save data_tmp op_exp_result
 
 else
     op_exp_result = (W_bar)^1e7 * init_op;
