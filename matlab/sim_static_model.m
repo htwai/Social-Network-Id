@@ -32,7 +32,7 @@ G = triu(G,1); G = G + G'; G = G > 0;
 
 % Strogatz Watts Case
 % G = full(smallw(N,1,0.5));
-% G = full(wattsstrogatz(N,0.08,0.08));
+G = full(wattsstrogatz(N,0.08,0.08));
 
 % Pref.-Attachment Case (BA Model)
 % G = full(pref(N));

@@ -23,8 +23,12 @@ N_s = 180; % there are $N_s$ stubborn agents, which are probes that we can explo
 
 % Retrieve $G$ by permutation
 [degree_seq,idx] = sort( sum(A) , 'descend' );
-G_com = A( [idx((N-N_s)/2 : (N+N_s)/2-1) setdiff(1:N,idx((N-N_s)/2 : (N+N_s)/2-1))],...
-    [idx((N-N_s)/2 : (N+N_s)/2-1) setdiff(1:N,idx((N-N_s)/2 : (N+N_s)/2-1))] ); 
+% Selecting the max degree nodes 
+G_com = A( [idx(1:N_s) setdiff(1:N,idx(1:N_s))],...
+    [idx(1:N_s) setdiff(1:N,idx(1:N_s))] ); 
+% Selecting the median degree nodes 
+% G_com = A( [idx((N-N_s)/2 : (N+N_s)/2-1) setdiff(1:N,idx((N-N_s)/2 : (N+N_s)/2-1))],...
+%     [idx((N-N_s)/2 : (N+N_s)/2-1) setdiff(1:N,idx((N-N_s)/2 : (N+N_s)/2-1))] ); 
 G_com(1:N_s,:) = 0;
 
 G = G_com(N_s+1:end,N_s+1:end);
@@ -64,7 +68,7 @@ W_bar = eye(Ntotal) - diag(C*ones(Ntotal,1)) / (Ntotal) + C / (Ntotal);
 %% Now we can run our simulated experiments!
 % Let's run the simulation for the random exchange model
 
-flag = 0;
+flag = 1;
 
 if flag == 1
 
@@ -80,7 +84,7 @@ parfor eee = 1 : total_exp
     cnt_sample = 1;
     % now, utilize the randomized gossip exchange...
     for gossip_round = 1 : no_gossip
-        src_node = randi(N,1,1); % choose the node to wake up
+        src_node = randi(Ntotal,1,1); % choose the node to wake up
         x_op(N_s+1:end) = (1-C(N_s+1:end,src_node)).*x_op(N_s+1:end) + C(N_s+1:end,src_node)*x_op(src_node);
 
         if gossip_round == sample_instance(cnt_sample)
