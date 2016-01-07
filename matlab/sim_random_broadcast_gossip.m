@@ -151,13 +151,13 @@ alpha = 0.5/(norm((Y*Y')));
 
 l_nesterov = 0; % nesterov step size
 
-ratio_iter = zeros(1,100e3); obj_iter = ratio_iter;
+ratio_iter = zeros(1,1000e3); obj_iter = ratio_iter;
 tD = zeros(Nt); tB = zeros(Nt,N_s);
 
 D_old = D_i; B_old = B_i;
 
 min_ratio = inf;
-for pg_iter = 1 : 100e3
+for pg_iter = 1 : 1000e3
     % The projected, proximal gradient tries to minimize this:
     % min_{B,D \in C} ||D||_1 + lambda*||B-(I-D)X||_F^2 + gamma*||B1 + D1 - 1||_2^2
 %     tD_old = tD; tB_old = tB;
